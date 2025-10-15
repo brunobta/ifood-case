@@ -11,20 +11,15 @@ def download_data(base_url: str, file_pattern: str, years: list, months: list, l
     :param file_pattern: O padrão do nome do arquivo com placeholders para ano e mês.
     :param years: Uma lista de anos para baixar.
     :param months: Uma lista de meses para baixar.
-    :param landing_zone_path: O caminho no DBFS para salvar os arquivos.
+    :param landing_zone_path: O caminho para salvar os arquivos.
     :param retries: Número de tentativas de download em caso de falha.
     :param delay: Atraso em segundos entre as tentativas.
     """
-    # Para salvar arquivos localmente no driver do Databricks, o caminho DBFS
-    # deve ser prefixado com /dbfs.
-    local_landing_zone = landing_zone_path.replace("dbfs:/", "/dbfs/")
-    os.makedirs(local_landing_zone, exist_ok=True)
-
     for year in years:
         for month in months:
             file_name = file_pattern.format(year=year, month=f"{month:02d}")
             file_url = f"{base_url}/{file_name}"
-            local_file_path = os.path.join(local_landing_zone, file_name)
+            local_file_path = os.path.join(landing_zone_path, file_name)
 
             if os.path.exists(local_file_path):
                 print(f"Arquivo {file_name} já existe. Pulando o download.")
