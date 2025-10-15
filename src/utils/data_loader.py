@@ -57,14 +57,25 @@ def download_data(base_url: str, file_pattern: str, years: list, months: list, l
             for attempt in range(retries):
                 print(f"Baixando {file_name} de {file_url} (tentativa {attempt + 1}/{retries})...")
                 try:
+                    print("Iniciando download...")
                     response = requests.get(file_url, stream=True, timeout=60)
                     response.raise_for_status()  # Lança um erro para códigos de status ruins (4xx ou 5xx)
-                    # Baixa para um arquivo temporário local e depois move para o S3
-                    with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-                        for chunk in response.iter_content(chunk_size=8192):
-                            tmp_file.write(chunk)
-                        # Move o arquivo do disco local do cluster para o destino final no S3
-                        dbutils.fs.mv(f"file:{tmp_file.name}", destination_path)
+                    # Em clusters compartilhados, o dbutils só pode acessar o sistema de arquivos local
+                    # a partir do diretório de trabalho. Usamos um arquivo temporário nesse local.
+                    temp_local_path = os.path.join(os.getcwd(), f"temp_{file_name}")
+                    
+                    try:
+                        with open(temp_local_path, "wb") as f:
+                            for chunk in response.iter_content(chunk_size=8192):
+                                f.write(chunk)
+                        
+                        # Copia o arquivo do local temporário para o destino final (S3)
+                        dbutils.fs.cp(f"file:{temp_local_path}", destination_path)
+                    finally:
+                        # Garante que o arquivo temporário seja removido mesmo se a cópia falhar
+                        if os.path.exists(temp_local_path):
+                            os.remove(temp_local_path)
+
                     print(f"Arquivo {file_name} salvo em {destination_path}")
                     successful_downloads += 1
                     break  # Sucesso, sai do loop de tentativas
