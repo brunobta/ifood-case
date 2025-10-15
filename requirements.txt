@@ -1,3 +1,7 @@
 pyspark==3.5.0 # Para desenvolvimento e teste local
 requests==2.31.0 # Para download programático dos dados
 delta-spark==3.5.0 # Suporte ao Delta Lake no PySpark
+
+# Ferramentas de Qualidade de Código
+flake8==6.1.0
+pytest==8.0.0

@@ -1,5 +1,5 @@
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import col, when, lit, array, size, unix_timestamp
+from pyspark.sql.functions import col, when, lit, array, size, unix_timestamp, expr
 
 
 def apply_data_quality_checks(df: DataFrame) -> DataFrame:
@@ -26,5 +26,15 @@ def apply_data_quality_checks(df: DataFrame) -> DataFrame:
     # Cria uma coluna de array contendo todas as falhas para um registro
     failure_reasons_col = array([when(rule, lit(reason)) for rule, reason in dq_rules])
 
-    return df.withColumn("dq_failures", failure_reasons_col) \
-             .withColumn("dq_status", when(size(col("dq_failures")) == 0, lit("PASS")).otherwise(lit("FAIL")))
+    # Adiciona a coluna de falhas (com nulos) e depois filtra
+    df_with_failures = df.withColumn("dq_failures_with_nulls", failure_reasons_col)
+    
+    df_with_filtered_failures = df_with_failures.withColumn(
+        "dq_failures",
+        expr("filter(dq_failures_with_nulls, x -> x is not null)")
+    )
+
+    return df_with_filtered_failures.withColumn(
+        "dq_status",
+        when(size(col("dq_failures")) == 0, lit("PASS")).otherwise(lit("FAIL"))
+    ).drop("dq_failures_with_nulls")
