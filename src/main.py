@@ -1,6 +1,6 @@
-from common.spark import create_spark_session
-from jobs.taxi_ingestion import run_ingestion_job
-from utils.data_loader import download_data
+from src.common.spark import create_spark_session
+from src.jobs.taxi_ingestion import run_ingestion_job
+from src.utils.data_loader import download_data
 
 
 def main():
@@ -15,8 +15,9 @@ def main():
     months_to_download = range(1, 6)  # Janeiro a Maio
 
     # Caminhos para o Data Lake no Databricks (DBFS)
-    landing_zone_path = "/FileStore/ifood_case/landing_zone/"
-    data_lake_path = "/FileStore/ifood_case/data_lake"
+    # O Spark requer o prefixo 'dbfs:/' para acessar o Databricks File System.
+    landing_zone_path = "dbfs:/FileStore/ifood_case/landing_zone/"
+    data_lake_path = "dbfs:/FileStore/ifood_case/data_lake"
 
     # --- Execução do Pipeline ---
     # 1. Baixar os dados brutos para a landing zone

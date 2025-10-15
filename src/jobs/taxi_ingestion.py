@@ -3,7 +3,7 @@ from pyspark.sql.functions import col, month, year, to_timestamp, concat_ws
 from pyspark.sql.types import IntegerType, DoubleType
 from delta.tables import DeltaTable
 
-from utils.data_quality import apply_data_quality_checks
+from src.utils.data_quality import apply_data_quality_checks
 
 
 def run_ingestion_job(spark: SparkSession, input_path: str, data_lake_path: str):

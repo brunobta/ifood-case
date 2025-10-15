@@ -1,8 +1,9 @@
 import os
 import requests
+import time
 
 
-def download_data(base_url: str, file_pattern: str, years: list, months: list, landing_zone_path: str):
+def download_data(base_url: str, file_pattern: str, years: list, months: list, landing_zone_path: str, retries: int = 3, delay: int = 5):
     """
     Baixa os arquivos de dados de táxi do site da NYC TLC.
 
@@ -11,9 +12,12 @@ def download_data(base_url: str, file_pattern: str, years: list, months: list, l
     :param years: Uma lista de anos para baixar.
     :param months: Uma lista de meses para baixar.
     :param landing_zone_path: O caminho no DBFS para salvar os arquivos.
+    :param retries: Número de tentativas de download em caso de falha.
+    :param delay: Atraso em segundos entre as tentativas.
     """
-    # No Databricks, o acesso local ao DBFS é feito pelo prefixo /dbfs
-    local_landing_zone = landing_zone_path.replace("/FileStore", "/dbfs/FileStore")
+    # Para salvar arquivos localmente no driver do Databricks, o caminho DBFS
+    # deve ser prefixado com /dbfs.
+    local_landing_zone = landing_zone_path.replace("dbfs:/", "/dbfs/")
     os.makedirs(local_landing_zone, exist_ok=True)
 
     for year in years:
@@ -26,13 +30,19 @@ def download_data(base_url: str, file_pattern: str, years: list, months: list, l
                 print(f"Arquivo {file_name} já existe. Pulando o download.")
                 continue
 
-            print(f"Baixando {file_name} de {file_url}...")
-            try:
-                response = requests.get(file_url, stream=True)
-                response.raise_for_status()  # Lança um erro para códigos de status ruins (4xx ou 5xx)
-                with open(local_file_path, "wb") as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        f.write(chunk)
-                print(f"Arquivo {file_name} salvo em {local_file_path}")
-            except requests.exceptions.RequestException as e:
-                print(f"Falha ao baixar {file_name}. Erro: {e}")
+            for attempt in range(retries):
+                print(f"Baixando {file_name} de {file_url} (tentativa {attempt + 1}/{retries})...")
+                try:
+                    response = requests.get(file_url, stream=True, timeout=60)
+                    response.raise_for_status()  # Lança um erro para códigos de status ruins (4xx ou 5xx)
+                    with open(local_file_path, "wb") as f:
+                        for chunk in response.iter_content(chunk_size=8192):
+                            f.write(chunk)
+                    print(f"Arquivo {file_name} salvo em {local_file_path}")
+                    break  # Sucesso, sai do loop de tentativas
+                except requests.exceptions.RequestException as e:
+                    print(f"Falha na tentativa {attempt + 1} para baixar {file_name}. Erro: {e}")
+                    if attempt < retries - 1:
+                        time.sleep(delay)
+                    else:
+                        print(f"Falha ao baixar {file_name} após {retries} tentativas. Pulando para o próximo.")
