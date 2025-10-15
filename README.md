@@ -137,19 +137,9 @@ O Databricks Runtime já inclui as bibliotecas `pyspark` e `delta-spark`. Você 
 
 O pipeline completo, incluindo o download dos dados e a ingestão, é executado a partir de um único ponto de entrada.
 
-1.  No `Workspace`, crie um novo notebook chamado `pipeline_runner`.
-2.  Anexe o cluster ativo ao notebook.
-3.  Em uma célula do notebook, insira o seguinte comando mágico para executar o script principal:
-
-    ```python
-    exec(
-    open(
-        './src/main.py'
-    ).read()
-    )
-    ```
-
-4.  Execute a célula. O script irá:
+1.  No `Workspace`, acesse o arquivo `src/main.py`.
+2.  Anexe o cluster ativo.
+4.  Execute o arquivo python. O script irá:
     *   Baixar automaticamente os arquivos `.parquet` necessários para a `landing_zone`.
     *   Executar o pipeline de ingestão, criando as tabelas `taxi_bronze` e `taxi_silver`.
     *   Registrar as tabelas no Metastore do Databricks para que possam ser consultadas via SQL.
