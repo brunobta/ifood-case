@@ -7,24 +7,12 @@ Este repositório contém a solução para um desafio de engenharia de dados, qu
 A solução foi desenvolvida utilizando **Databricks** e segue uma arquitetura **Medalhão (Bronze, Silver, Gold)**, que promove a governança e a qualidade dos dados em camadas.
 
 ```mermaid
-graph TD
-    subgraph AWS S3
-        A[Landing Zone: Raw Parquet Files] --> B{Bronze Layer: taxi_bronze};
-        B --> C{Silver Layer: taxi_silver};
-        B --> D[Quarantine Layer: taxi_quarantine];
-    end
-
-    subgraph Databricks
-        C --> E[Gold Layer: Análises SQL];
-        E --> F[Dashboards];
-    end
-
-    style A fill:#D6EAF8,stroke:#333,stroke-width:2px
-    style B fill:#E5E7E9,stroke:#333,stroke-width:2px
-    style C fill:#D5D8DC,stroke:#333,stroke-width:2px
-    style D fill:#FADBD8,stroke:#333,stroke-width:2px
-    style E fill:#F9E79F,stroke:#333,stroke-width:2px
-    style F fill:#A9DFBF,stroke:#333,stroke-width:2px
+graph TD;
+    A[S3 Landing Zone <br> Raw Parquet] --> B{Bronze Table <br> Raw Data};
+    B --> |Apply DQ & Transform| C{Silver Table <br> Cleaned Data};
+    B --> |DQ Failures| D[Quarantine Table];
+    C --> E[Gold: SQL Analytics];
+    E --> F[Dashboards];
 ```
 
 1.  **Landing Zone (Amazon S3):** Os arquivos brutos `.parquet` dos meses de Janeiro a Maio de 2023 são baixados e armazenados no caminho `s3://datalake-ifood-case/landing/`.
