@@ -14,10 +14,9 @@ def main():
     years_to_download = [2023]
     months_to_download = range(1, 6)  # Janeiro a Maio
 
-    # Caminhos para o Data Lake no Databricks (DBFS)
-    # O Spark requer o prefixo 'dbfs:/' para acessar o Databricks File System.
-    landing_zone_path = "dbfs:/FileStore/ifood_case/landing_zone/"
-    data_lake_path = "dbfs:/FileStore/ifood_case/data_lake"
+    # Caminhos para o Data Lake no Databricks
+    landing_zone_path = "/FileStore/ifood_case/landing_zone/"
+    data_lake_path = "/FileStore/ifood_case/data_lake"
 
     # --- Execução do Pipeline ---
     # 1. Baixar os dados brutos para a landing zone
