@@ -76,13 +76,16 @@ ifood-case/
 │ ├─ common/
 │ │ └─ spark.py             # Função para criar e configurar a SparkSession
 │ ├─ jobs/
-│ │ └─ taxi_ingestion.py    # Lógica principal do pipeline de ingestão (Bronze -> Silver)
+│ │ └─ bronze_ingestion.py  # Lógica do pipeline de ingestão Bronze
+│ │ └─ silver_ingestion.py  # Lógica do pipeline de ingestão Silver e Data Quality
 │ ├─ utils/
 │ │ ├─ data_loader.py       # Função para download automático dos dados
 │ │ └─ data_quality.py      # Funções para aplicar as regras de qualidade
 │ └─ main.py                # Ponto de entrada que orquestra a execução do pipeline 
 ├─ analysis/
 │ └─ queries.sql            # Queries SQL para responder às perguntas de negócio
+├─ tests/
+│ └─ test_data_quality.py   # Testes unitários para as regras de qualidade
 ├─ README.md                # Este arquivo 
 └─ requirements.txt         # Dependências do projeto
 ```
@@ -157,7 +160,7 @@ O pipeline completo, incluindo o download dos dados e a ingestão, é executado 
 2.  Copie o conteúdo do arquivo `analysis/queries.sql` para células separadas no notebook.
 3.  Execute cada célula para obter as respostas para as perguntas do desafio. Os resultados serão exibidos em formato de tabela.
 
-### 6. Criando um Dashboard de Análise Visual
+### 7. Criando um Dashboard de Análise Visual
 
 Para apresentar os resultados de forma interativa, você pode criar um dashboard no ambiente **Databricks SQL**. Siga os passos abaixo:
 
@@ -192,11 +195,24 @@ Para apresentar os resultados de forma interativa, você pode criar um dashboard
     *   Quando terminar, clique em **`Done Editing`**.
     *   Você pode usar o botão **`Share`** para compartilhar o link do seu dashboard.
 
+### 8. Execução dos testes unitários
+
+Para garantir a corretude das regras de qualidade de dados, foram criados testes unitários utilizando `pytest`. Para executá-los, siga os passos:
+
+1.  **Abra um terminal** no ambiente Databricks ou em sua máquina local com o projeto configurado.
+2.  Navegue até o diretório raiz do projeto.
+3.  Execute o seguinte comando:
+
+    ```bash
+    pytest
+    ```
+
+O Pytest descobrirá e executará automaticamente os testes definidos em `tests/utils/test_data_quality.py`.
+
 ## Melhorias Futuras
 
 Para evoluir a solução, as seguintes melhorias podem ser implementadas:
 
 *   **CI/CD:** Automatizar testes e deploys utilizando GitHub Actions.
 *   **Infraestrutura como Código (IaC):** Gerenciar a infraestrutura AWS e Databricks (clusters, jobs) com Terraform.
-*   **Cargas Incrementais:** Modificar o pipeline para processar dados de forma incremental (usando `MERGE` do Delta Lake) em vez de sobrescrever tudo (`overwrite`), otimizando o processamento para novos dados.
 *   **Orquestração com Databricks Jobs:** Substituir a execução manual via notebook por um Job agendado no Databricks para maior robustez e automação.
