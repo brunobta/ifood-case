@@ -1,5 +1,5 @@
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import col, when, lit, array, size
+from pyspark.sql.functions import col, when, lit, array, size, unix_timestamp
 
 
 def apply_data_quality_checks(df: DataFrame) -> DataFrame:
@@ -18,7 +18,7 @@ def apply_data_quality_checks(df: DataFrame) -> DataFrame:
         # Regra mais avançada: a corrida não pode durar mais de 24 horas
         (col("dropoff_datetime") <= col("pickup_datetime"), "invalid_trip_duration"),
         (
-            (col("dropoff_datetime").cast("double") - col("pickup_datetime").cast("double")) > 24 * 3600,
+            (unix_timestamp(col("dropoff_datetime")) - unix_timestamp(col("pickup_datetime"))) > 24 * 3600,
             "trip_duration_too_long"
         )
     ]
