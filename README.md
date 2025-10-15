@@ -84,7 +84,11 @@ O pipeline completo, incluindo o download dos dados e a ingestão, é executado 
 3.  Em uma célula do notebook, insira o seguinte comando mágico para executar o script principal:
 
     ```python
-    %run ./src/main.py
+    exec(
+    open(
+        './src/main.py'
+    ).read()
+    )
     ```
 
 4.  Execute a célula. O script irá:
