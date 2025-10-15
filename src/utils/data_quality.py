@@ -1,0 +1,30 @@
+from pyspark.sql import DataFrame
+from pyspark.sql.functions import col, when, lit, array, size
+
+
+def apply_data_quality_checks(df: DataFrame) -> DataFrame:
+    """
+    Aplica um conjunto de regras de qualidade de dados e rotula cada registro.
+
+    :param df: DataFrame a ser verificado.
+    :return: DataFrame com colunas de status de DQ ('dq_status', 'dq_failures').
+    """
+    # Define as regras de qualidade e a mensagem de erro para cada uma
+    dq_rules = [
+        (col("total_amount") <= 0, "invalid_total_amount"),
+        (col("passenger_count") <= 0, "invalid_passenger_count"),
+        (col("pickup_datetime").isNull(), "null_pickup_datetime"),
+        (col("dropoff_datetime").isNull(), "null_dropoff_datetime"),
+        # Regra mais avançada: a corrida não pode durar mais de 24 horas
+        (col("dropoff_datetime") <= col("pickup_datetime"), "invalid_trip_duration"),
+        (
+            (col("dropoff_datetime").cast("long") - col("pickup_datetime").cast("long")) > 24 * 3600,
+            "trip_duration_too_long"
+        )
+    ]
+
+    # Cria uma coluna de array contendo todas as falhas para um registro
+    failure_reasons_col = array([when(rule, lit(reason)) for rule, reason in dq_rules])
+
+    return df.withColumn("dq_failures", failure_reasons_col) \
+             .withColumn("dq_status", when(size(col("dq_failures")) == 0, lit("PASS")).otherwise(lit("FAIL")))
