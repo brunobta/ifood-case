@@ -15,8 +15,8 @@ def main():
     months_to_download = range(1, 6)  # Janeiro a Maio
 
     # Caminhos para o Data Lake no Databricks
-    landing_zone_path = "/FileStore/ifood_case/landing_zone/"
-    data_lake_path = "/FileStore/ifood_case/data_lake"
+    landing_zone_path = "s3://datalake-ifood-case/landing/"
+    data_lake_path = "s3://datalake-ifood-case"
 
     # --- Execução do Pipeline ---
     # 1. Baixar os dados brutos para a landing zone
