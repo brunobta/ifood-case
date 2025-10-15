@@ -57,7 +57,7 @@ A tabela `taxi_silver` é a fonte de verdade para análises e contém as seguint
 | `passenger_count`  | `INTEGER`     | O número de passageiros no veículo.                                    |
 | `total_amount`     | `DOUBLE`      | O valor total cobrado do passageiro.                                   |
 | `pickup_month`     | `INTEGER`     | Mês de início da corrida (coluna de partição).                         |
-| `pickup_year`      | `INTEGER`     | Ano de início da corrida (coluna de partição).                          |
+| `pickup_year`      | `INTEGER`     | Ano de início da corrida (coluna de partição).                         |
 
 ## Perguntas de Negócio
 
@@ -170,8 +170,8 @@ Para apresentar os resultados de forma interativa, você pode criar um dashboard
         *   Cole a primeira query do arquivo `analysis/queries.sql`. Para uma melhor visualização, podemos formatar a data:
           ```sql
           SELECT
-              MAKE_DATE(pickup_year, pickup_month, 1) AS ride_month,
-              AVG(total_amount) AS average_total_amount
+               MAKE_DATE(pickup_year, pickup_month, 1) AS ride_month
+              ,ROUND(AVG(total_amount), 2) AS average_total_amount
           FROM taxi_silver
           GROUP BY ride_month
           ORDER BY ride_month;

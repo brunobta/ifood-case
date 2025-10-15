@@ -5,9 +5,9 @@
 -- A consulta agrupa por ano e mês para fornecer a média mensal.
 
 SELECT
-    pickup_year,
-    pickup_month,
-    AVG(total_amount) AS average_total_amount
+     pickup_year
+    ,pickup_month
+    ,ROUND(AVG(total_amount), 2) AS average_total_amount
 FROM taxi_silver
 GROUP BY pickup_year, pickup_month
 ORDER BY pickup_year, pickup_month;
@@ -16,8 +16,8 @@ ORDER BY pickup_year, pickup_month;
 -- que pegaram táxi no mês de maio considerando todos os táxis da frota?
 
 SELECT
-    hour(pickup_datetime) AS pickup_hour,
-    AVG(passenger_count) AS average_passenger_count
+     hour(pickup_datetime) AS pickup_hour
+    ,ROUND(AVG(passenger_count), 2) AS average_passenger_count
 FROM taxi_silver
 WHERE pickup_month = 5 AND pickup_year = 2023
 GROUP BY pickup_hour

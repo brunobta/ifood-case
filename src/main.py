@@ -1,5 +1,6 @@
 from src.common.spark import create_spark_session
-from src.jobs.taxi_ingestion import run_ingestion_job
+from src.jobs.bronze_ingestion import run_bronze_ingestion_job
+from src.jobs.silver_ingestion import run_silver_ingestion_job
 from src.utils.data_loader import download_data
 
 
@@ -23,9 +24,13 @@ def main():
     print("Iniciando etapa de download dos dados...")
     download_data(base_url, file_pattern, years_to_download, months_to_download, landing_zone_path)
 
-    # 2. Executar o pipeline de ingestão e transformação (Bronze -> Silver)
-    print("\nIniciando etapa de ingestão e transformação...")
-    run_ingestion_job(spark, landing_zone_path, data_lake_path)
+    # 2. Executar o pipeline de ingestão para a camada Bronze
+    print("\nIniciando etapa de ingestão para a camada Bronze...")
+    run_bronze_ingestion_job(spark, landing_zone_path, data_lake_path)
+
+    # 3. Executar o pipeline de processamento da camada Bronze para a Silver
+    print("\nIniciando etapa de processamento para a camada Silver...")
+    run_silver_ingestion_job(spark, data_lake_path)
 
 
 if __name__ == "__main__":
