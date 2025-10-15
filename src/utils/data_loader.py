@@ -3,7 +3,6 @@ import requests
 import time
 import tempfile
 
-
 def get_dbutils():
     """
     Obtém a instância do dbutils se estiver em um ambiente Databricks.
@@ -16,77 +15,88 @@ def get_dbutils():
     except (ImportError, ModuleNotFoundError):
         return None
 
-def download_data(base_url: str, file_pattern: str, years: list, months: list, landing_zone_path: str, retries: int = 3, delay: int = 5):
-    """
-    Baixa os arquivos de dados de táxi do site da NYC TLC.
+class DataLoader:
+    def __init__(self, base_url: str, file_pattern: str, years: list, months: list, landing_zone_path: str, retries: int = 3, delay: int = 5):
+        self.base_url = base_url
+        self.file_pattern = file_pattern
+        self.years = years
+        self.months = months
+        self.landing_zone_path = landing_zone_path
+        self.retries = retries
+        self.delay = delay
+        self.dbutils = get_dbutils()
+        if not self.dbutils:
+            raise RuntimeError("Esta função requer um ambiente Databricks para interagir com o S3.")
 
-    :param base_url: A URL base para download dos arquivos.
-    :param file_pattern: O padrão do nome do arquivo com placeholders para ano e mês.
-    :param years: Uma lista de anos para baixar.
-    :param months: Uma lista de meses para baixar.
-    :param landing_zone_path: O caminho para salvar os arquivos.
-    :param retries: Número de tentativas de download em caso de falha.
-    :param delay: Atraso em segundos entre as tentativas.
-    """
-    dbutils = get_dbutils()
-    if not dbutils:
-        raise RuntimeError("Esta função requer um ambiente Databricks para interagir com o S3.")
+    def download(self):
+        """
+        Baixa os arquivos de dados de táxi do site da NYC TLC.
+        """
+        self.dbutils.fs.mkdirs(self.landing_zone_path)
 
-    # Garante que o diretório de destino no S3 (ou DBFS) exista
-    dbutils.fs.mkdirs(landing_zone_path)
+        successful_downloads = 0
+        total_files = len(self.years) * len(self.months)
 
-    successful_downloads = 0
-    total_files = len(years) * len(months)
+        for year in self.years:
+            for month in self.months:
+                file_name = self.file_pattern.format(year=year, month=f"{month:02d}")
+                file_url = f"{self.base_url}/{file_name}"
+                destination_path = f"{self.landing_zone_path.rstrip('/')}/{file_name}"
 
-    for year in years:
-        for month in months:
-            file_name = file_pattern.format(year=year, month=f"{month:02d}")
-            file_url = f"{base_url}/{file_name}"
-            destination_path = f"{landing_zone_path.rstrip('/')}/{file_name}"
-
-            try:
-                # Usa dbutils para verificar se o arquivo já existe no destino (S3)
-                dbutils.fs.ls(destination_path)
-                print(f"Arquivo {file_name} já existe. Pulando o download.")
-                successful_downloads += 1
-                continue
-            except Exception:
-                # O arquivo não existe, prossegue para o download
-                pass
-
-            for attempt in range(retries):
-                print(f"Baixando {file_name} de {file_url} (tentativa {attempt + 1}/{retries})...")
-                try:
-                    print("Iniciando download...")
-                    response = requests.get(file_url, stream=True, timeout=60)
-                    response.raise_for_status()  # Lança um erro para códigos de status ruins (4xx ou 5xx)
-                    # Em clusters compartilhados, o dbutils só pode acessar o sistema de arquivos local
-                    # a partir do diretório de trabalho. Usamos um arquivo temporário nesse local.
-                    temp_local_path = os.path.join(os.getcwd(), f"temp_{file_name}")
-                    
-                    try:
-                        with open(temp_local_path, "wb") as f:
-                            for chunk in response.iter_content(chunk_size=8192):
-                                f.write(chunk)
-                        
-                        # Copia o arquivo do local temporário para o destino final (S3)
-                        dbutils.fs.cp(f"file:{temp_local_path}", destination_path)
-                    finally:
-                        # Garante que o arquivo temporário seja removido mesmo se a cópia falhar
-                        if os.path.exists(temp_local_path):
-                            os.remove(temp_local_path)
-
-                    print(f"Arquivo {file_name} salvo em {destination_path}")
+                if self._file_exists(destination_path):
+                    print(f"Arquivo {file_name} já existe. Pulando o download.")
                     successful_downloads += 1
-                    break  # Sucesso, sai do loop de tentativas
-                except requests.exceptions.RequestException as e:
-                    print(f"Falha na tentativa {attempt + 1} para baixar {file_name}. Erro: {e}")
-                    if attempt < retries - 1:
-                        time.sleep(delay)
-                    else:
-                        print(f"Falha ao baixar {file_name} após {retries} tentativas. Pulando para o próximo arquivo.")
+                    continue
 
-    if successful_downloads == 0 and total_files > 0:
-        print("\nNenhum arquivo foi baixado com sucesso. Verifique a conexão de rede e as URLs.")
-        print("Abortando a execução do pipeline.")
-        raise RuntimeError("A etapa de download de dados falhou. Nenhum arquivo foi obtido.")
+                if self._download_file(file_name, file_url, destination_path):
+                    successful_downloads += 1
+
+        if successful_downloads == 0 and total_files > 0:
+            print("\nNenhum arquivo foi baixado com sucesso. Verifique a conexão de rede e as URLs.")
+            print("Abortando a execução do pipeline.")
+            raise RuntimeError("A etapa de download de dados falhou. Nenhum arquivo foi obtido.")
+
+    def _file_exists(self, path: str) -> bool:
+        """
+        Verifica se um arquivo existe no caminho de destino.
+        """
+        try:
+            self.dbutils.fs.ls(path)
+            return True
+        except Exception:
+            return False
+
+    def _download_file(self, file_name: str, file_url: str, destination_path: str) -> bool:
+        """
+        Baixa um único arquivo.
+        """
+        for attempt in range(self.retries):
+            print(f"Baixando {file_name} de {file_url} (tentativa {attempt + 1}/{self.retries})...")
+            try:
+                print("Iniciando download...")
+                response = requests.get(file_url, stream=True, timeout=60)
+                response.raise_for_status()
+                
+                temp_local_path = os.path.join(os.getcwd(), f"temp_{file_name}")
+                
+                try:
+                    with open(temp_local_path, "wb") as f:
+                        for chunk in response.iter_content(chunk_size=8192):
+                            f.write(chunk)
+                    
+                    self.dbutils.fs.cp(f"file:{temp_local_path}", destination_path)
+                finally:
+                    if os.path.exists(temp_local_path):
+                        os.remove(temp_local_path)
+
+                print(f"Arquivo {file_name} salvo em {destination_path}")
+                return True
+            except requests.exceptions.RequestException as e:
+                print(f"Falha na tentativa {attempt + 1} para baixar {file_name}. Erro: {e}")
+                if attempt < self.retries - 1:
+                    time.sleep(self.delay)
+                else:
+                    print(f"Falha ao baixar {file_name} após {self.retries} tentativas. Pulando para o próximo arquivo.")
+                    return False
+        return False
+
