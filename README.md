@@ -200,5 +200,3 @@ Para evoluir a solução, as seguintes melhorias podem ser implementadas:
 *   **Infraestrutura como Código (IaC):** Gerenciar a infraestrutura AWS e Databricks (clusters, jobs) com Terraform.
 *   **Cargas Incrementais:** Modificar o pipeline para processar dados de forma incremental (usando `MERGE` do Delta Lake) em vez de sobrescrever tudo (`overwrite`), otimizando o processamento para novos dados.
 *   **Orquestração com Databricks Jobs:** Substituir a execução manual via notebook por um Job agendado no Databricks para maior robustez e automação.
-*   **Testes:** Implementar testes unitários e de integração para garantir a qualidade e a manutenibilidade do código.
-*   **Camada Gold:** Materializar as agregações de negócio em tabelas na camada Gold para acelerar o consumo por dashboards e ferramentas de BI.
