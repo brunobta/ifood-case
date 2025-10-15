@@ -18,7 +18,7 @@ def apply_data_quality_checks(df: DataFrame) -> DataFrame:
         # Regra mais avançada: a corrida não pode durar mais de 24 horas
         (col("dropoff_datetime") <= col("pickup_datetime"), "invalid_trip_duration"),
         (
-            (col("dropoff_datetime").cast("long") - col("pickup_datetime").cast("long")) > 24 * 3600,
+            (col("dropoff_datetime").cast("double") - col("pickup_datetime").cast("double")) > 24 * 3600,
             "trip_duration_too_long"
         )
     ]
