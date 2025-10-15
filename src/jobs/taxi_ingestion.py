@@ -53,7 +53,11 @@ def run_ingestion_job(spark: SparkSession, input_path: str, data_lake_path: str)
     # --- Camada Bronze ---
     print(f"Iniciando escrita na camada Bronze em: {bronze_table_path}")
     # O modo "overwrite" aqui é para garantir a idempotência do job em um cenário de teste.
-    standardized_df.write.format("delta").mode("overwrite").option("overwriteSchema", "true").save(bronze_table_path)
+    # Habilita o suporte a TimestampNTZ, necessário para os dados de origem.
+    standardized_df.write.format("delta") \
+                   .mode("overwrite") \
+                   .option("overwriteSchema", "true") \
+                   .save(bronze_table_path)
 
     bronze_table = DeltaTable.forPath(spark, bronze_table_path)
     bronze_records_count = bronze_table.history(1).select("operationMetrics.numOutputRows").collect()[0][0]
@@ -89,6 +93,7 @@ def run_ingestion_job(spark: SparkSession, input_path: str, data_lake_path: str)
     silver_df.write.format("delta") \
              .mode("overwrite") \
              .option("overwriteSchema", "true") \
+             .option("delta.feature.timestampNtz", "supported") \
              .partitionBy("pickup_year", "pickup_month") \
              .save(silver_table_path)
 
@@ -103,7 +108,10 @@ def run_ingestion_job(spark: SparkSession, input_path: str, data_lake_path: str)
         print(f"Escrevendo registros na camada de Quarentena em: {quarantine_table_path}")
         # Converte o array de falhas em uma string para facilitar a consulta
         quarantined_records_df.withColumn("dq_failures", concat_ws(",", col("dq_failures"))) \
-            .write.format("delta").mode("overwrite").save(quarantine_table_path)
+            .write.format("delta") \
+            .mode("overwrite") \
+            .option("delta.feature.timestampNtz", "supported") \
+            .save(quarantine_table_path)
         spark.sql(f"CREATE TABLE IF NOT EXISTS taxi_quarantine USING DELTA LOCATION '{quarantine_table_path}'")
         print("Tabela 'taxi_quarantine' criada/atualizada.")
 

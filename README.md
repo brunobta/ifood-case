@@ -1,14 +1,34 @@
-# Case Técnico Data Architect - iFood Challenge
+# iFood - Data Challenge
 
-Este repositório contém a solução para o desafio técnico de Arquitetura de Dados proposto pelo iFood. O objetivo é demonstrar habilidades em engenharia, análise e modelagem de dados através da criação de um pipeline para ingestão e processamento de dados de corridas de táxi de Nova York.
+Este repositório contém a solução para um desafio de engenharia de dados, que consiste em construir um pipeline para processar dados de corridas de táxis de Nova York. O objetivo é demonstrar habilidades em arquitetura, engenharia e análise de dados, utilizando tecnologias como **PySpark**, **Databricks** e **Delta Lake**.
 
 ## Arquitetura da Solução
 
 A solução foi desenvolvida utilizando **Databricks** e segue uma arquitetura **Medalhão (Bronze, Silver, Gold)**, que promove a governança e a qualidade dos dados em camadas.
 
+```mermaid
+graph TD
+    subgraph AWS S3
+        A[Landing Zone: Raw Parquet Files] --> B{Bronze Layer: taxi_bronze};
+        B --> C{Silver Layer: taxi_silver};
+        B --> D[Quarantine Layer: taxi_quarantine];
+    end
+
+    subgraph Databricks
+        C --> E[Gold Layer: Análises SQL];
+        E --> F[Dashboards];
+    end
+
+    style A fill:#D6EAF8,stroke:#333,stroke-width:2px
+    style B fill:#E5E7E9,stroke:#333,stroke-width:2px
+    style C fill:#D5D8DC,stroke:#333,stroke-width:2px
+    style D fill:#FADBD8,stroke:#333,stroke-width:2px
+    style E fill:#F9E79F,stroke:#333,stroke-width:2px
+    style F fill:#A9DFBF,stroke:#333,stroke-width:2px
+```
+
 1.  **Landing Zone (Amazon S3):** Os arquivos brutos `.parquet` dos meses de Janeiro a Maio de 2023 são baixados e armazenados no caminho `s3://datalake-ifood-case/landing/`.
 2.  **Camada Bronze (Tabela Delta no S3):** Os dados brutos são ingeridos da Landing Zone para a tabela Delta `taxi_bronze`, localizada em `s3://datalake-ifood-case/bronze/`. Esta camada serve como um backup versionado e auditável dos dados originais.
-
 3.  **Camada Silver (Tabela Delta no S3):** A partir da camada Bronze, os dados são limpos, transformados e enriquecidos, resultando na tabela `taxi_silver`, localizada em `s3://datalake-ifood-case/silver/`. Esta é a camada principal para consumo e análises. As transformações incluem:
     *   Seleção das colunas de interesse: `VendorID`, `tpep_pickup_datetime`, `tpep_dropoff_datetime`, `passenger_count`, `total_amount`.
     *   Conversão de tipos de dados para garantir consistência.
@@ -16,9 +36,9 @@ A solução foi desenvolvida utilizando **Databricks** e segue uma arquitetura *
     *   Criação de colunas derivadas (`pickup_year`, `pickup_month`) para otimizar consultas.
     *   A tabela é particionada por ano e mês para melhorar a performance das queries.
 
-4.  **Quarentena (Tabela Delta no S3):** Registros que falham nas validações de qualidade da camada Silver são movidos para a tabela `taxi_quarantine` em `s3://datalake-ifood-case/quarantine/` para análise posterior.
+4.  **Camada de Quarentena (Tabela Delta no S3):** Registros que falham nas validações de qualidade da camada Silver são movidos para a tabela `taxi_quarantine` em `s3://datalake-ifood-case/quarantine/` para análise posterior.
 
-4.  **Camada Gold (Views/Análises):** As análises de negócio são realizadas diretamente sobre a tabela Silver através de queries SQL, que podem ser salvas como `Views` para facilitar o acesso por usuários finais.
+5.  **Camada Gold (Views/Análises):** As análises de negócio são realizadas diretamente sobre a tabela Silver através de queries SQL, que podem ser salvas como `Views` para facilitar o acesso por usuários finais.
 
 ### Justificativas Técnicas
 
@@ -26,6 +46,37 @@ A solução foi desenvolvida utilizando **Databricks** e segue uma arquitetura *
 *   **Databricks:** Escolhido por ser uma plataforma unificada que integra perfeitamente Spark, notebooks, gerenciamento de jobs e um metastore, simplificando o desenvolvimento e a operação do pipeline.
 *   **Delta Lake:** Adotado como formato de armazenamento por garantir transações ACID, versionamento de dados (time travel) e por otimizar o desempenho de queries em um Data Lake.
 *   **SQL para Análise:** A disponibilização dos dados via tabelas Delta no metastore do Databricks permite que usuários finais (analistas, cientistas de dados) consultem os dados de forma simples e eficiente usando a linguagem SQL padrão, com a qual já estão familiarizados.
+
+## Qualidade dos Dados
+
+Uma etapa crucial do pipeline é a validação da qualidade dos dados na transição da camada Bronze para a Silver. Registros que não atendem aos critérios definidos são separados para uma tabela de quarentena. As seguintes regras são aplicadas:
+
+*   `total_amount` deve ser maior que zero.
+*   `passenger_count` deve ser maior que zero.
+*   `pickup_datetime` e `dropoff_datetime` não podem ser nulos.
+*   A data/hora de `dropoff_datetime` deve ser posterior à de `pickup_datetime`.
+*   A duração da viagem não pode exceder 24 horas.
+
+## Dicionário de Dados (Camada Silver)
+
+A tabela `taxi_silver` é a fonte de verdade para análises e contém as seguintes colunas:
+
+| Coluna             | Tipo de Dado  | Descrição                                                              |
+|--------------------|---------------|------------------------------------------------------------------------|
+| `vendor_id`        | `INTEGER`     | ID que identifica o provedor de tecnologia da corrida.                 |
+| `pickup_datetime`  | `TIMESTAMP`   | Data e hora em que a corrida começou.                                  |
+| `dropoff_datetime` | `TIMESTAMP`   | Data e hora em que a corrida terminou.                                 |
+| `passenger_count`  | `INTEGER`     | O número de passageiros no veículo.                                    |
+| `total_amount`     | `DOUBLE`      | O valor total cobrado do passageiro.                                   |
+| `pickup_month`     | `INTEGER`     | Mês de início da corrida (coluna de partição).                         |
+| `pickup_year`      | `INTEGER`     | Ano de início da corrida (coluna de partição).                          |
+
+## Perguntas de Negócio
+
+O pipeline foi projetado para responder às seguintes perguntas de negócio:
+
+1.  Qual a média de valor total (`total_amount`) recebido por mês, considerando toda a frota?
+2.  Qual a média de passageiros (`passenger_count`) por hora do dia durante o mês de maio?
 
 ## Estrutura do Repositório
 
@@ -152,3 +203,14 @@ Para apresentar os resultados de forma interativa, você pode criar um dashboard
     *   Arraste e redimensione os gráficos como preferir.
     *   Quando terminar, clique em **`Done Editing`**.
     *   Você pode usar o botão **`Share`** para compartilhar o link do seu dashboard.
+
+## Melhorias Futuras
+
+Para evoluir a solução, as seguintes melhorias podem ser implementadas:
+
+*   **CI/CD:** Automatizar testes e deploys utilizando GitHub Actions.
+*   **Infraestrutura como Código (IaC):** Gerenciar a infraestrutura AWS e Databricks (clusters, jobs) com Terraform.
+*   **Cargas Incrementais:** Modificar o pipeline para processar dados de forma incremental (usando `MERGE` do Delta Lake) em vez de sobrescrever tudo (`overwrite`), otimizando o processamento para novos dados.
+*   **Orquestração com Databricks Jobs:** Substituir a execução manual via notebook por um Job agendado no Databricks para maior robustez e automação.
+*   **Testes:** Implementar testes unitários e de integração para garantir a qualidade e a manutenibilidade do código.
+*   **Camada Gold:** Materializar as agregações de negócio em tabelas na camada Gold para acelerar o consumo por dashboards e ferramentas de BI.
