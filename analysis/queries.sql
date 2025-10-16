@@ -1,5 +1,3 @@
--- analysis/queries.sql
-
 -- Pergunta 1: Qual a média de valor total (total_amount) recebido em um mês
 -- considerando todos os yellow táxis da frota?
 -- A consulta agrupa por ano e mês para fornecer a média mensal.
