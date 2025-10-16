@@ -63,8 +63,9 @@ A tabela `taxi_silver` é a fonte de verdade para análises e contém as seguint
 
 O pipeline foi projetado para responder às seguintes perguntas de negócio:
 
-1.  Qual a média de valor total (`total_amount`) recebido por mês, considerando toda a frota?
-2.  Qual a média de passageiros (`passenger_count`) por hora do dia durante o mês de maio?
+1.  Qual a média de valor total (`total_amount`) recebido em um mês considerando todos os yellow táxis da frota?
+2.  Qual a média de passageiros (`passenger_count`) por cada hora do dia que pegaram táxi no mês de maio considerando todos os táxis da frota?
+
 
 ## Estrutura do Repositório
 
@@ -74,20 +75,24 @@ O código foi modularizado para promover a reutilização e a clareza, seguindo 
 ifood-case/ 
 ├─ src/
 │ ├─ jobs/
-│ │ ├─ extract_data.py      # Lógica para extrair dados da fonte
-│ │ ├─ bronze_ingestion.py  # Lógica do pipeline de ingestão Bronze
-│ │ └─ silver_ingestion.py  # Lógica do pipeline de ingestão Silver e Data Quality
+│ │ ├─ extract_data.py          # Lógica para extrair dados da fonte
+│ │ ├─ bronze_ingestion.py      # Lógica do pipeline de ingestão Bronze
+│ │ └─ silver_ingestion.py      # Lógica do pipeline de ingestão Silver e Data Quality
 │ ├─ utils/
-│ │ ├─ data_loader.py       # Função para download dos dados por período
-│ │ └─ data_quality.py      # Funções para aplicar as regras de qualidade
-│ │ └─ spark.py             # Função para criar e configurar a SparkSession
-│ └─ main.py                # Ponto de entrada que orquestra a execução dos jobs
+│ │ ├─ data_loader.py           # Função para download dos dados por período
+│ │ ├─ data_quality.py          # Funções para aplicar as regras de qualidade
+│ │ └─ spark.py                 # Função para criar e configurar a SparkSession
+│ ├─ main.py                    # Ponto de entrada que orquestra a execução dos jobs
+│ ├─ config.py                  # Configurações globais
+│ └─ config.yaml                # Arquivo de configuração
 ├─ analysis/
-│ └─ queries.sql            # Queries SQL para responder às perguntas de negócio
+│ └─ queries.sql                # Queries SQL para responder às perguntas de negócio
 ├─ tests/
-│ └─ test_data_quality.py   # Testes unitários para as regras de qualidade
-├─ README.md                # Este arquivo 
-└─ requirements.txt         # Dependências do projeto
+│ ├─ utils/
+│ │ └─ test_data_quality.py     # Testes unitários para as regras de qualidade
+│ └─ conftest.py                # Configurações para os testes
+├─ README.md                    # Este arquivo 
+└─ requirements.txt             # Dependências do projeto
 ```
 
 ## Instruções de Execução
@@ -184,20 +189,11 @@ Estes comandos irão processar os dados e criar as tabelas `taxi_bronze` e `taxi
 Para apresentar os resultados de forma interativa, você pode criar um dashboard no ambiente **Databricks SQL**. Siga os passos abaixo:
 
 1.  **Mude para o ambiente SQL:**
-    *   No menu lateral esquerdo do Databricks, mude a persona de `Data Science & Engineering` para **`SQL`**.
+    *   No menu lateral esquerdo do Databricks, clique em **`SQL Editor`**.
 
 2.  **Crie as Visualizações:**
-    *   No menu lateral, vá em **`SQL Editor`**.
     *   **Gráfico 1: Média de Faturamento Mensal:**
         *   Cole a primeira query do arquivo `analysis/queries.sql`. Para uma melhor visualização, podemos formatar a data:
-          ```sql
-          SELECT
-               MAKE_DATE(pickup_year, pickup_month, 1) AS ride_month
-              ,ROUND(AVG(total_amount), 2) AS average_total_amount
-          FROM taxi_silver
-          GROUP BY ride_month
-          ORDER BY ride_month;
-          ```
         *   Execute a query. Abaixo da tabela de resultados, clique em **`+ Add Visualization`**.
         *   Escolha `Bar` (Barras) ou `Line` (Linha) como tipo de visualização, configure o eixo X para `ride_month` e o eixo Y para `average_total_amount`. Salve a visualização.
     *   **Gráfico 2: Média de Passageiros por Hora:**
