@@ -59,7 +59,10 @@ def main():
             print("\nIniciando etapa de processamento para a camada Silver...")
             job = SilverIngestion(
                 spark=create_spark_session('Silver Ingestion'),
-                data_lake_path=os.getenv("data_lake_path")
+                data_lake_path=os.getenv("data_lake_path"),
+                bronze_table_path=os.getenv("bronze_table_path"),
+                silver_table_path=os.getenv("silver_table_path"),
+                quarantine_table_path=os.getenv("quarantine_table_path")
             )
             job.run()
             print("\nProcessamento para a camada Silver concluído.")
