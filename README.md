@@ -73,15 +73,15 @@ O código foi modularizado para promover a reutilização e a clareza, seguindo 
 ```
 ifood-case/ 
 ├─ src/
-│ ├─ common/
-│ │ └─ spark.py             # Função para criar e configurar a SparkSession
 │ ├─ jobs/
-│ │ └─ bronze_ingestion.py  # Lógica do pipeline de ingestão Bronze
+│ │ ├─ extract_data.py      # Lógica para extrair dados da fonte
+│ │ ├─ bronze_ingestion.py  # Lógica do pipeline de ingestão Bronze
 │ │ └─ silver_ingestion.py  # Lógica do pipeline de ingestão Silver e Data Quality
 │ ├─ utils/
-│ │ ├─ data_loader.py       # Função para download automático dos dados
+│ │ ├─ data_loader.py       # Função para download dos dados por período
 │ │ └─ data_quality.py      # Funções para aplicar as regras de qualidade
-│ └─ main.py                # Ponto de entrada que orquestra a execução do pipeline 
+│ │ └─ spark.py             # Função para criar e configurar a SparkSession
+│ └─ main.py                # Ponto de entrada que orquestra a execução dos jobs
 ├─ analysis/
 │ └─ queries.sql            # Queries SQL para responder às perguntas de negócio
 ├─ tests/
@@ -133,16 +133,45 @@ O Databricks Runtime já inclui as bibliotecas `pyspark` e `delta-spark`. Você 
 5.  No campo `Workspace File Path`, navegue e selecione o arquivo `requirements.txt` que você subiu no passo anterior.
 6.  Clique em **`Install`**. O cluster irá instalar as bibliotecas e reiniciar.
 
-### 5. Execução do Pipeline de Ingestão
+### 5. Execução do Pipeline
 
-O pipeline completo, incluindo o download dos dados e a ingestão, é executado a partir de um único ponto de entrada.
+O pipeline é modular e pode ser executado por tarefas (`Extract`, `Bronze`, `Silver`) através do `src/main.py`.
 
-1.  No `Workspace`, acesse o arquivo `src/main.py`.
-2.  Anexe o cluster ativo.
-4.  Execute o arquivo python. O script irá:
-    *   Baixar automaticamente os arquivos `.parquet` necessários para a `landing_zone`.
-    *   Executar o pipeline de ingestão, criando as tabelas `taxi_bronze` e `taxi_silver`.
-    *   Registrar as tabelas no Metastore do Databricks para que possam ser consultadas via SQL.
+#### Executando a Extração de Dados
+
+Para executar a extração, você deve passar o ano e o intervalo de meses desejado como parâmetros.
+
+1.  Abra um terminal no Databricks ou crie uma célula de notebook com o seguinte comando:
+
+    ```bash
+    python /Workspace/ifood-case/src/main.py Extract <ano> <mes_inicio> <mes_fim>
+    ```
+
+2.  **Exemplo:** Para baixar os dados de Janeiro a Maio de 2023:
+
+    ```bash
+    python /Workspace/ifood-case/src/main.py Extract 2023 1 5
+    ```
+
+    O script irá baixar os arquivos `.parquet` correspondentes ao período e salvá-los na `landing_zone`.
+
+#### Executando a Ingestão (Bronze e Silver)
+
+Após a extração, você pode executar as etapas de ingestão.
+
+1.  Para a camada **Bronze**:
+
+    ```bash
+    python /Workspace/ifood-case/src/main.py Bronze
+    ```
+
+2.  Para a camada **Silver**:
+
+    ```bash
+    python /Workspace/ifood-case/src/main.py Silver
+    ```
+
+Estes comandos irão processar os dados e criar as tabelas `taxi_bronze` e `taxi_silver`, registrando-as no Metastore do Databricks.
 
 ### 6. Execução das Análises
 
@@ -205,4 +234,5 @@ Para evoluir a solução, as seguintes melhorias podem ser implementadas:
 
 *   **CI/CD:** Automatizar testes e deploys utilizando GitHub Actions.
 *   **Infraestrutura como Código (IaC):** Gerenciar a infraestrutura AWS e Databricks (clusters, jobs) com Terraform.
-*   **Orquestração com Databricks Jobs:** Substituir a execução manual via notebook por um Job agendado no Databricks para maior robustez e automação.
+*   **Testes:** Criar os demais cenários de teste para toda aplicação, além do Data Quality.
+*   **Web Hook Pré Commit:** Avaliar a qualidade do desenvolvimento dos códigos, antes de subir para as demais branch.

@@ -16,10 +16,10 @@ def get_dbutils():
         return None
 
 class DataLoader:
-    def __init__(self, base_url: str, file_pattern: str, years: list, months: list, landing_zone_path: str, retries: int = 3, delay: int = 5):
+    def __init__(self, base_url: str, file_pattern: str, year: str, months: list, landing_zone_path: str, retries: int = 3, delay: int = 5):
         self.base_url = base_url
         self.file_pattern = file_pattern
-        self.years = years
+        self.year = year
         self.months = months
         self.landing_zone_path = landing_zone_path
         self.retries = retries
@@ -35,21 +35,20 @@ class DataLoader:
         self.dbutils.fs.mkdirs(self.landing_zone_path)
 
         successful_downloads = 0
-        total_files = len(self.years) * len(self.months)
+        total_files = len(self.months)
 
-        for year in self.years:
-            for month in self.months:
-                file_name = self.file_pattern.format(year=year, month=f"{month:02d}")
-                file_url = f"{self.base_url}/{file_name}"
-                destination_path = f"{self.landing_zone_path.rstrip('/')}/{file_name}"
+        for month in self.months:
+            file_name = self.file_pattern.format(year=self.year, month=f"{month:02d}")
+            file_url = f"{self.base_url}/{file_name}"
+            destination_path = f"{self.landing_zone_path.rstrip('/')}/{file_name}"
 
-                if self._file_exists(destination_path):
-                    print(f"Arquivo {file_name} já existe. Pulando o download.")
-                    successful_downloads += 1
-                    continue
+            if self._file_exists(destination_path):
+                print(f"Arquivo {file_name} já existe. Pulando o download.")
+                successful_downloads += 1
+                continue
 
-                if self._download_file(file_name, file_url, destination_path):
-                    successful_downloads += 1
+            if self._download_file(file_name, file_url, destination_path):
+                successful_downloads += 1
 
         if successful_downloads == 0 and total_files > 0:
             print("\nNenhum arquivo foi baixado com sucesso. Verifique a conexão de rede e as URLs.")
