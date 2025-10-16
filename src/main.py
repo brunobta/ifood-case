@@ -2,6 +2,8 @@ from src.utils.spark import create_spark_session
 from src.jobs.bronze_ingestion import BronzeIngestion
 from src.jobs.silver_ingestion import SilverIngestion
 from src.jobs.extract_data import ExtractData
+from src.config import load_config_as_env
+
 import sys
 import os
 
@@ -15,6 +17,7 @@ def main():
 
     match task_name:
         case "Extract":
+            """Executa o pipeline de extração de dados."""
             if len(sys.argv) != 5:
                 print("Uso: python main.py Extract <ano> <mes_inicio> <mes_fim>")
                 sys.exit(1)
@@ -29,7 +32,6 @@ def main():
 
             meses = list(range(mes_inicio, mes_fim + 1))
 
-            """Executa o pipeline de extração de dados."""
             print("\nIniciando etapa de extração de dados...")
             job = ExtractData(
                 base_url=os.getenv("base_url"),
@@ -63,4 +65,5 @@ def main():
             sys.exit(1)
 
 if __name__ == "__main__":
+    load_config_as_env()
     main()
