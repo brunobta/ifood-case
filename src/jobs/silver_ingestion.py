@@ -7,12 +7,12 @@ from src.utils.data_quality import apply_data_quality_checks
 
 
 class SilverIngestion:
-    def __init__(self, spark: SparkSession, data_lake_path: str):
+    def __init__(self, spark: SparkSession, data_lake_path: str, bronze_table_path: str , silver_table_path: str, quarantine_table_path: str):
         self.spark = spark
         self.data_lake_path = data_lake_path
-        self.bronze_table_path = f"{self.data_lake_path}/bronze/yellow_taxi_trips"
-        self.silver_table_path = f"{self.data_lake_path}/silver/yellow_taxi_trips"
-        self.quarantine_table_path = f"{self.data_lake_path}/quarantine/yellow_taxi_trips"
+        self.bronze_table_path = f"{self.data_lake_path}{bronze_table_path}"
+        self.silver_table_path = f"{self.data_lake_path}{silver_table_path}"
+        self.quarantine_table_path = f"{self.data_lake_path}{quarantine_table_path}"
 
     def run(self):
         """
