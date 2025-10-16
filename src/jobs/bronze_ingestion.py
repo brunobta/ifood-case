@@ -3,13 +3,12 @@ from pyspark.dbutils import DBUtils
 from functools import reduce
 from delta.tables import DeltaTable
 
-
-class BronzeIngestionJob:
-    def __init__(self, spark: SparkSession, input_path: str, data_lake_path: str):
+class BronzeIngestion:
+    def __init__(self, spark: SparkSession, input_path: str, data_lake_path: str, bronze_table_path: str ):
         self.spark = spark
         self.input_path = input_path
         self.data_lake_path = data_lake_path
-        self.bronze_table_path = f"{self.data_lake_path}/bronze/yellow_taxi_trips"
+        self.bronze_table_path = f"{self.data_lake_path}{bronze_table_path}"
 
     def run(self):
         """

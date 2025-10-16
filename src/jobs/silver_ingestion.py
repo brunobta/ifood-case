@@ -6,7 +6,7 @@ from delta.tables import DeltaTable
 from src.utils.data_quality import apply_data_quality_checks
 
 
-class SilverIngestionJob:
+class SilverIngestion:
     def __init__(self, spark: SparkSession, data_lake_path: str):
         self.spark = spark
         self.data_lake_path = data_lake_path

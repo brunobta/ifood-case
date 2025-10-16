@@ -1,0 +1,7 @@
+base_url: "https://d37ci6vzurychx.cloudfront.net/trip-data"
+data_lake_path: "s3://datalake-ifood-case/"
+source: "yellow_tripdata"
+landing_zone_path: "landing"
+bronze_table_path: "bronze/yellow_taxi_trips"
+silver_table_path: "silver/yellow_taxi_trips"
+gold_table_path: "gold/yellow_taxi_trips"

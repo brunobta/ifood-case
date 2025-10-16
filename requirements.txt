@@ -5,3 +5,5 @@ delta-spark==4.0.0 # Suporte ao Delta Lake no PySpark
 # Ferramentas de Qualidade de Código
 flake8==6.1.0
 pytest==8.0.0
+
+pyyaml==6.0 # Para manipulação de arquivos YAML (configurações)
