@@ -48,7 +48,7 @@ def main():
             print("\nIniciando etapa de ingestão para a camada Bronze...")
             job = BronzeIngestion(
                 spark=create_spark_session('Bronze Ingestion'),
-                input_path=os.getenv("input_path"),
+                input_path=os.getenv("data_lake_path") + os.getenv("landing_zone_path"),
                 data_lake_path=os.getenv("data_lake_path"),
                 bronze_table_path=os.getenv("bronze_table_path")
             )
