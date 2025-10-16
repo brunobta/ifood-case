@@ -19,7 +19,6 @@ class ExtractData:
 
     def _download_data(self):
         """Baixa os dados brutos para a landing zone."""
-        print("Iniciando etapa de download dos dados...")
         loader = DataLoader(
             base_url=self.base_url,
             file_pattern=self.file_pattern,
