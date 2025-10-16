@@ -1,19 +1,8 @@
 import pytest
-from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, DoubleType, IntegerType, TimestampType
 from datetime import datetime, timedelta
 
 from src.utils.data_quality import apply_data_quality_checks
-
-
-@pytest.fixture(scope="session")
-def spark_session():
-    """Cria uma SparkSession para os testes."""
-    return SparkSession.builder \
-        .master("local[2]") \
-        .appName("DataQualityTests") \
-        .config("spark.sql.shuffle.partitions", "1") \
-        .getOrCreate()
 
 
 def test_apply_data_quality_checks(spark_session):

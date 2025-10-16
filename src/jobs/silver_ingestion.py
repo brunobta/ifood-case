@@ -68,8 +68,6 @@ class SilverIngestion:
         print(f"Iniciando escrita na camada Silver em: {self.silver_table_path}")
         silver_df.write.format("delta") \
                  .mode("overwrite") \
-                 .option("overwriteSchema", "true") \
-                 .option("delta.feature.timestampNtz", "supported") \
                  .partitionBy("pickup_year", "pickup_month") \
                  .save(self.silver_table_path)
 
@@ -90,7 +88,6 @@ class SilverIngestion:
             df.withColumn("dq_failures", concat_ws(",", col("dq_failures"))) \
                 .write.format("delta") \
                 .mode("overwrite") \
-                .option("delta.feature.timestampNtz", "supported") \
                 .save(self.quarantine_table_path)
             self.spark.sql(f"CREATE TABLE IF NOT EXISTS taxi_quarantine USING DELTA LOCATION '{self.quarantine_table_path}'")
             print("Tabela 'taxi_quarantine' criada/atualizada.")
